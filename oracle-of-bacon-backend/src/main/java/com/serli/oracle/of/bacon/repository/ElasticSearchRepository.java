@@ -10,6 +10,8 @@ import java.util.List;
 public class ElasticSearchRepository {
 
     private final RestHighLevelClient client;
+    public static final String INDEX = "oracle-of-bacon";
+    public static final String TYPE = "actors";
 
     public ElasticSearchRepository() {
         client = createClient();
