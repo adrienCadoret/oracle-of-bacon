@@ -3,27 +3,20 @@ package com.serli.oracle.of.bacon.loader.elasticsearch;
 import com.serli.oracle.of.bacon.repository.ElasticSearchRepository;
 import org.elasticsearch.action.bulk.*;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.common.xcontent.XContentType;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class CompletionLoader {
     private static AtomicInteger count = new AtomicInteger(0);
     private static AtomicInteger initialNumberOfLine = new AtomicInteger(0);
-    private static AtomicInteger bulkIteration = new AtomicInteger(0);
 
     /**
      * Nombre maximum du lot de requête exécuté en bulk sur elastic
@@ -65,12 +58,14 @@ public class CompletionLoader {
                             // Créé l'index à ajouter
                             XContentBuilder builder = XContentFactory.jsonBuilder();
 
+                            String name = line.substring(1, line.length()-1);
+
                             builder.startObject();
-                            builder.field("name", line);
+                            builder.field("name", name);
                             builder.endObject();
 
-                            // On sotcke l'index dans la BulkRequest dans la stack
-                            bulkbulkrequest.peek().add(new IndexRequest(ElasticSearchRepository.INDEX, ElasticSearchRepository.TYPE, line).source(builder));
+                            // On sotcke l'index dans la BulkRequest au 1er element de la stack
+                            bulkbulkrequest.peek().add(new IndexRequest(ElasticSearchRepository.INDEX, ElasticSearchRepository.TYPE, name).source(builder));
 
                             int current_count = count.incrementAndGet();
 
@@ -90,9 +85,12 @@ public class CompletionLoader {
         client.close();
     }
 
+    /**
+     * Permet d'envoyer un lot de bulkrequest auprès d'elastic
+     *
+     * @param client le client elastic
+     */
     private static void sendBulk(RestHighLevelClient client) throws IOException {
-        bulkIteration.incrementAndGet();
-
         System.out.println("Prepared total of " + count.get() + " of " + initialNumberOfLine.get() + " actors");
 
         if (bulkbulkrequest.peek().numberOfActions() != 0) {
@@ -102,6 +100,7 @@ public class CompletionLoader {
                 for (BulkItemResponse itemResponse : response) {
                     if (itemResponse.isFailed()) {
                         BulkItemResponse.Failure failure = itemResponse.getFailure();
+                        System.err.println(failure.getMessage());
                         count.decrementAndGet();
                     }
                 }
