@@ -22,6 +22,6 @@ public class RedisRepository {
             jedis.rpop(INDEX);
         }
 
-        jedis.lpushx(INDEX, actorName);
+        jedis.lpush(INDEX, actorName);
     }
 }
