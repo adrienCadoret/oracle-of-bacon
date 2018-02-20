@@ -58,12 +58,14 @@ public class CompletionLoader {
                             // Créé l'index à ajouter
                             XContentBuilder builder = XContentFactory.jsonBuilder();
 
+                            String name = line.substring(1, line.length()-1);
+
                             builder.startObject();
-                            builder.field("name", line);
+                            builder.field("name", name);
                             builder.endObject();
 
                             // On sotcke l'index dans la BulkRequest au 1er element de la stack
-                            bulkbulkrequest.peek().add(new IndexRequest(ElasticSearchRepository.INDEX, ElasticSearchRepository.TYPE, line).source(builder));
+                            bulkbulkrequest.peek().add(new IndexRequest(ElasticSearchRepository.INDEX, ElasticSearchRepository.TYPE, name).source(builder));
 
                             int current_count = count.incrementAndGet();
 
