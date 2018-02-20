@@ -138,6 +138,9 @@ fabric.properties
 # *.ipr
 
 
+package-lock.json
+
+
 ### Eclipse ###
 
 .metadata
