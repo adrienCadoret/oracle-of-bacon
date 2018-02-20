@@ -33,6 +33,7 @@ public class APIEndPoint {
     public String getConnectionsToKevinBacon(String actorName) {
 
         List<Object> elements = (List<Object>) neo4JRepository.getConnectionsToKevinBacon(actorName);
+        redisRepository.setLastSearched(actorName);
 
 
         JsonArray jsonArray = new JsonArray();
@@ -77,11 +78,7 @@ public class APIEndPoint {
 
     @Get("last-searches")
     public List<String> last10Searches() {
-        return Arrays.asList("Peckinpah, Sam",
-                "Robbins, Tim (I)",
-                "Freeman, Morgan (I)",
-                "De Niro, Robert",
-                "Pacino, Al (I)");
+        return redisRepository.getLastTenSearches();
     }
 
     @Get("actor?name=:actorName")
