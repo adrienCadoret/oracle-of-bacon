@@ -16,6 +16,7 @@ To Run, execute class *com.serli.oracle.of.bacon.Application*.
 # Init Neo4J
 
 Installation de Neo4J Server
+Créer une base de données avec username = "neo4j" et password = "coucou"
 Importer les données 'Actors', 'Movies' et ''Roles'
 --> Mettre les fichiers .csv dans le dossier 'import' du serveur Neo4J
 Commande pour importer : 
