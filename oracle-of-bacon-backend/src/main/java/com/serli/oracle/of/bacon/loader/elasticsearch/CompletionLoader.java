@@ -4,6 +4,7 @@ import com.serli.oracle.of.bacon.repository.ElasticSearchRepository;
 import org.elasticsearch.action.bulk.*;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -16,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class CompletionLoader {
@@ -23,7 +25,16 @@ public class CompletionLoader {
     private static AtomicInteger initialNumberOfLine = new AtomicInteger(0);
     private static AtomicInteger bulkIteration = new AtomicInteger(0);
 
+    /**
+     * Nombre maximum du lot de requête exécuté en bulk sur elastic
+     */
     private static final int NUMBER_OF_INDEX_PER_BULK = 200000;
+
+    /**
+     * Permet d'envoyer les requêtes bulk dès qu'on a atteint le nombre max de requêtes ci-dessus : car java 8 et dans le forEach(line -> ..) on ne peut pas modifier un bulkRequest externe la var doit être finale.
+     * On utilise donc un seul élément de la stack à chaque fois
+     */
+    private final static Stack<BulkRequest> bulkbulkrequest = new Stack<>();
 
     /**
      * Si erreur entity too large (trop de données à bulker), il faut décrémenter la variable NUMBER_OF_INDEX_PER_BULK. Ce sera bien sûr plus long à éxécuter
@@ -41,9 +52,7 @@ public class CompletionLoader {
             System.exit(-1);
         }
 
-        List<BulkRequest> bulkbulkrequest = new ArrayList<>();
-
-        bulkbulkrequest.add(new BulkRequest());
+        bulkbulkrequest.push(new BulkRequest());
 
         String inputFilePath = args[0];
         try (BufferedReader bufferedReader = Files.newBufferedReader(Paths.get(inputFilePath))) {
@@ -53,19 +62,21 @@ public class CompletionLoader {
                         initialNumberOfLine.incrementAndGet();
 
                         try {
+                            // Créé l'index à ajouter
                             XContentBuilder builder = XContentFactory.jsonBuilder();
 
                             builder.startObject();
                             builder.field("name", line);
                             builder.endObject();
 
-                            bulkbulkrequest.get(bulkIteration.get()).add(new IndexRequest(ElasticSearchRepository.INDEX, ElasticSearchRepository.TYPE, line).source(builder));
+                            // On sotcke l'index dans la BulkRequest dans la stack
+                            bulkbulkrequest.peek().add(new IndexRequest(ElasticSearchRepository.INDEX, ElasticSearchRepository.TYPE, line).source(builder));
 
                             int current_count = count.incrementAndGet();
 
+                            // Si on atteint les NUMBER_OF_INDEX_PER_BULK index préparés, on envoie le tout à elastic
                             if (current_count % NUMBER_OF_INDEX_PER_BULK == 0) {
-                                bulkIteration.incrementAndGet();
-                                bulkbulkrequest.add(new BulkRequest());
+                                sendBulk(client);
                             }
                         } catch (IOException e) {
                             System.err.println(e.getMessage());
@@ -73,10 +84,19 @@ public class CompletionLoader {
                     });
         }
 
+        // On envoie ce qui reste
+        sendBulk(client);
+
+        client.close();
+    }
+
+    private static void sendBulk(RestHighLevelClient client) throws IOException {
+        bulkIteration.incrementAndGet();
+
         System.out.println("Prepared total of " + count.get() + " of " + initialNumberOfLine.get() + " actors");
 
-        for (BulkRequest request : bulkbulkrequest) {
-            BulkResponse response = client.bulk(request);
+        if (bulkbulkrequest.peek().numberOfActions() != 0) {
+            BulkResponse response = client.bulk(bulkbulkrequest.pop());
 
             if (response.hasFailures()) {
                 for (BulkItemResponse itemResponse : response) {
@@ -86,9 +106,10 @@ public class CompletionLoader {
                     }
                 }
             }
-        }
 
-        System.out.println("Indexed total of " + count.get() + " of " + initialNumberOfLine.get() + " actors");
-        client.close();
+            System.out.println("Indexed total of " + count.get() + " of " + initialNumberOfLine.get() + " actors");
+
+            bulkbulkrequest.push(new BulkRequest());
+        }
     }
 }
