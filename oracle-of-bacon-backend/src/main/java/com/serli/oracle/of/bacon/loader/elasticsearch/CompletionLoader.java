@@ -3,20 +3,14 @@ package com.serli.oracle.of.bacon.loader.elasticsearch;
 import com.serli.oracle.of.bacon.repository.ElasticSearchRepository;
 import org.elasticsearch.action.bulk.*;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.common.xcontent.XContentType;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -104,6 +98,7 @@ public class CompletionLoader {
                 for (BulkItemResponse itemResponse : response) {
                     if (itemResponse.isFailed()) {
                         BulkItemResponse.Failure failure = itemResponse.getFailure();
+                        System.err.println(failure.getMessage());
                         count.decrementAndGet();
                     }
                 }
