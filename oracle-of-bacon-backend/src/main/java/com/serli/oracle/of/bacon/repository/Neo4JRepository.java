@@ -1,25 +1,47 @@
 package com.serli.oracle.of.bacon.repository;
 
 
-import org.neo4j.driver.v1.AuthTokens;
-import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.internal.InternalPath;
+import org.neo4j.driver.internal.value.PathValue;
+import org.neo4j.driver.v1.*;
+import org.neo4j.driver.v1.types.Node;
+import org.neo4j.driver.v1.types.Path;
+import org.neo4j.driver.v1.types.Relationship;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class Neo4JRepository {
     private final Driver driver;
 
     public Neo4JRepository() {
-        this.driver = GraphDatabase.driver("bolt://localhost:7687", AuthTokens.basic("neo4j", "password"));
+        this.driver = GraphDatabase.driver("bolt://localhost:7687", AuthTokens.basic("neo4j", "coucou"));
     }
 
     public List<?> getConnectionsToKevinBacon(String actorName) {
-        Session session = driver.session();
 
-        // TODO implement Oracle of Bacon
-        return null;
+        List<Object> toReturn = new ArrayList<>();
+        try ( Session session = driver.session() )
+        {
+            StatementResult rs = session.run( "MATCH p=shortestPath((bacon:Actor {name:\"Bacon, Kevin (I)\"})-[*]-(actor:Actor {name:\""+actorName+"\"}))  RETURN DISTINCT p");
+            List<Record> list = rs.list();
+
+            if(list.size() > 0) {
+                Path path = ((PathValue) list.get(0).values().get(0)).asPath();
+                Iterable<Node> listNodes = path.nodes();
+                for(Node n: listNodes){
+                    toReturn.add(n);
+                }
+                Iterable<Relationship> listRelationships = path.relationships();
+                for(Relationship r: listRelationships){
+                    toReturn.add(r);
+                }
+
+            }
+        }
+
+        return toReturn;
     }
 
     public static abstract class GraphItem {
