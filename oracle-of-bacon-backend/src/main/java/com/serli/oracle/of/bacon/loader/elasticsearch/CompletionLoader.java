@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class CompletionLoader {
     private static AtomicInteger count = new AtomicInteger(0);
     private static AtomicInteger initialNumberOfLine = new AtomicInteger(0);
-    private static AtomicInteger bulkIteration = new AtomicInteger(0);
 
     /**
      * Nombre maximum du lot de requête exécuté en bulk sur elastic
@@ -69,7 +68,7 @@ public class CompletionLoader {
                             builder.field("name", line);
                             builder.endObject();
 
-                            // On sotcke l'index dans la BulkRequest dans la stack
+                            // On sotcke l'index dans la BulkRequest au 1er element de la stack
                             bulkbulkrequest.peek().add(new IndexRequest(ElasticSearchRepository.INDEX, ElasticSearchRepository.TYPE, line).source(builder));
 
                             int current_count = count.incrementAndGet();
@@ -90,9 +89,12 @@ public class CompletionLoader {
         client.close();
     }
 
+    /**
+     * Permet d'envoyer un lot de bulkrequest auprès d'elastic
+     *
+     * @param client le client elastic
+     */
     private static void sendBulk(RestHighLevelClient client) throws IOException {
-        bulkIteration.incrementAndGet();
-
         System.out.println("Prepared total of " + count.get() + " of " + initialNumberOfLine.get() + " actors");
 
         if (bulkbulkrequest.peek().numberOfActions() != 0) {
