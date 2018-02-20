@@ -1,3 +1,0 @@
-[
-  {"data":
-  {"id":844730,"type":"Actor","value":"\"Bacon, Kevin (I)\""}},{"data":{"id":423766,"type":"Movie","value":"\"Mystic River (2003)\""}},{"data":{"id":2153462,"type":"Actor","value":"\"Robbins, Tim (I)\""}},{"data":{"id":579848,"source":844730,"target":423766,"value":"PLAYED_IN"}},{"data":{"id":9985692,"source":2153462,"target":423766,"value":"PLAYED_IN"}}]
