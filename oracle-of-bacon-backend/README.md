@@ -30,3 +30,11 @@ Importer les données 'mongodb-102/src/data/Top_1000_Actors_and_Actresses.csv' en
 'mongoimport -d workshop -c actors --type csv --file Top_1000_Actors_and_Actresses.csv --headerline'
 
 
+# Init ElasticSearch
+Exécuter elasticsearch.bat dans le dossier
+Lancer le fichier CompletionLoader avec en argument le chemin du fichier actors.csv (import des acteurs dans ES)
+
+# Init Redis
+Lancer redis-server.exe
+
+

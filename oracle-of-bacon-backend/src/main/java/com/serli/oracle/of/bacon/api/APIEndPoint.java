@@ -81,6 +81,7 @@ public class APIEndPoint {
 
     @Get("last-searches")
     public List<String> last10Searches() {
+        System.out.println("redisRepository = " + redisRepository.getLastTenSearches());
         return redisRepository.getLastTenSearches();
     }
 
